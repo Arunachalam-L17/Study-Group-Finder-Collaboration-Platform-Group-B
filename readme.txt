@@ -96,38 +96,52 @@ Milestone 4 (Week 7–8)
     Reminder notifications
 
 Database Schema :
-User :
 
-The User collection stores all the information related to the students using the platform. It includes fields such as id, name, email, and password for authentication. It also stores academic details including secondarySchool, secondarySchoolPassingYear, secondarySchoolPercentage, higherSecondarySchool, higherSecondaryPassingYear, higherSecondaryPercentage, universityName, universityPassingYear, and universityPassingGPA.
+User :
+The User entity stores all information related to students using the platform. 
+It includes the fields id, name, email, and password which are used for authentication and identification. 
+Academic details are also stored, including secondarySchool, secondarySchoolPassingYear, secondarySchoolPercentage, higherSecondarySchool, higherSecondaryPassingYear, higherSecondaryPercentage, universityName, universityPassingYear, and universityPassingGPA. 
+These details help build a complete student profile within the system.
 
 Course :
-
-The Course collection stores details about the courses available on the platform. Each course record contains an id, courseCode, courseName, and description. These courses help students find peers who are enrolled in the same subjects.
+The Course entity stores information about the subjects available in the platform.
+ Each course contains the fields id, courseCode, courseName, and description. 
+ This entity allows the system to connect students who are enrolled in the same courses.
 
 Group :
-
-The Group collection represents the study groups created by users. Each group contains an id, name, description, the courseId associated with the group, and createdBy which stores the user who created the group.
+The Group entity represents the study groups created by users. 
+It contains fields such as id, name, description, courseId, and createdBy. 
+Each group is associated with a specific course and helps students collaborate with others studying the same subject.
 
 GroupMember :
-
-The GroupMember collection maintains the relationship between users and groups. It contains groupId, userId, and role. The role field defines whether the user is an Admin or a Member of the group.
+The GroupMember entity manages the relationship between users and study groups. 
+It includes groupId, userId, and role. The role field defines the responsibility of a member within the group, such as Admin or Member.
 
 Session :
+The Session entity stores information about scheduled study sessions within a group. 
+It includes fields such as id, groupId, title, description, date, and createdBy. 
+This helps groups organize structured study meetings.
 
-The Session collection is used to manage study sessions scheduled by groups. Each session includes an id, groupId, title, description, date, and createdBy which indicates the user who created the session.
-
-Notification :
-
-The Notification collection manages system notifications sent to users. Each notification contains an id, userId, type which may represent reminders or invitations, and status which indicates whether the notification is read or unread.
+Notification:
+The Notification entity is responsible for managing alerts and updates for users. 
+Each record contains id, userId, type, and status. The type indicates whether the notification is a reminder or invitation, 
+and the status indicates whether it has been read or remains unread.
 
 Technologies Used :
-
-The frontend of the application is developed using HTML, CSS, and JavaScript to build the user interface and interactive components. The backend is implemented using Node.js with the Express framework to handle server-side logic and API requests. MongoDB is used as the database to store user data, groups, sessions, and other related information. Authentication is handled using JWT (JSON Web Tokens) to ensure secure user login and session management. Real-time communication features such as group chat are implemented using WebSockets. Git and GitHub are used for version control and collaborative development.
+The frontend of the platform is developed using HTML, CSS, and JavaScript to create an interactive and responsive user interface. 
+The backend is implemented using Node.js with the Express framework, which handles server-side logic and API requests. 
+The application uses MongoDB as the database to store user profiles, groups, courses, sessions, and notifications. 
+User authentication is implemented using JSON Web Tokens (JWT) to ensure secure login and session management. 
+Real-time communication features such as group chat are supported through WebSockets. The project uses Git and GitHub for version control and collaborative development.
 
 Expected Outcomes :
-
-The platform allows students to easily discover other students who are enrolled in the same course. It simplifies the process of creating and joining study groups for collaborative learning. Communication tools help group members interact and discuss academic topics efficiently. The integrated scheduling system allows groups to organize study sessions and manage their study plans effectively.
+The platform enables students to easily discover peers who are studying the same courses. 
+It simplifies the process of creating and joining study groups and supports efficient collaboration among members. 
+Communication tools allow group members to interact and exchange ideas in real time. 
+The integrated scheduling system helps groups plan study sessions and stay organized.
 
 Future Improvements :
-
-Future improvements may include the addition of file sharing functionality within study groups so that students can exchange notes and study materials. Integration of video conferencing features could allow groups to conduct online study meetings directly within the platform. Artificial intelligence could be used to recommend suitable study partners based on course enrollment and study patterns. A mobile application version of the platform could also be developed to provide better accessibility for students.
+Future development of the platform may include file sharing capabilities so students can exchange notes and study materials directly within the group.
+Integration of video conferencing features would allow users to conduct online study meetings.
+Artificial intelligence could also be introduced to recommend study partners based on course enrollment and learning patterns.
+Additionally, developing a mobile application version of the platform would improve accessibility and convenience for users.
