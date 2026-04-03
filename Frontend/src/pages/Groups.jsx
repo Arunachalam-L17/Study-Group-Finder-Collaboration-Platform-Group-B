@@ -241,12 +241,12 @@ export default function Groups() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Only show main TopBar when course group chat is not open */}
-      {!openCourseGroupChat && <TopBar user={user} extraContent={<NotificationBar user={user} />} />}
+      <TopBar user={user} extraContent={<NotificationBar user={user} />} />
       
       {/* Show course group chat interface directly when openCourseGroupChat is true */}
       {openCourseGroupChat ? (
         <div className="min-h-screen bg-gray-50 font-sans">
+          <TopBar user={user} extraContent={<ChatNotificationBar user={user} />} />
           <ChatLayout 
             user={user} 
             groupId={chatGroupId}

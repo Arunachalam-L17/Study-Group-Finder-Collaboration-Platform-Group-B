@@ -33,6 +33,16 @@ public class Notification {
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id")
+    private StudySession session;
+
+    @Column(name = "session_id")
+    private Long sessionId;
+
+    @Column(name = "session_title")
+    private String sessionTitle;
+
     @Column(name = "created_at")
     private Timestamp createdAt;
 
@@ -40,7 +50,11 @@ public class Notification {
         GROUP_JOIN_REQUEST,
         GROUP_JOIN_ACCEPTED,
         GROUP_JOIN_REJECTED,
-        CHAT_MESSAGE
+        CHAT_MESSAGE,
+        SESSION_SCHEDULED,
+        SESSION_REMINDER,
+        SESSION_UPDATED,
+        SESSION_CANCELLED
     }
 
     // Constructors
@@ -90,4 +104,17 @@ public class Notification {
 
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    public StudySession getSession() { return session; }
+    public void setSession(StudySession session) { 
+        this.session = session;
+        this.sessionId = session != null ? session.getId() : null;
+        this.sessionTitle = session != null ? session.getTitle() : null;
+    }
+
+    public Long getSessionId() { return sessionId; }
+    public void setSessionId(Long sessionId) { this.sessionId = sessionId; }
+
+    public String getSessionTitle() { return sessionTitle; }
+    public void setSessionTitle(String sessionTitle) { this.sessionTitle = sessionTitle; }
 }

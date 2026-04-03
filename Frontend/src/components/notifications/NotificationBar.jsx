@@ -1,10 +1,91 @@
 import { useState, useEffect } from "react";
-import { Bell, X, Check, X as XIcon, User, Users, MessageCircle } from "lucide-react";
+import { Bell, X, Check, X as XIcon, User, Users, MessageCircle, Clock } from "lucide-react";
+import { useSessionNotifications } from "../../hooks/useSessionNotifications";
 
 export default function NotificationBar({ user }) {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Initialize session notifications
+  useSessionNotifications(user);
+
+  // Debug: Log when notifications are updated
+  useEffect(() => {
+    console.log('NotificationBar - User:', user?.email);
+    console.log('NotificationBar - Total notifications:', notifications.length);
+    console.log('NotificationBar - Session notifications:', notifications.filter(n => n.type === 'session_reminder' || n.type === 'session_started').length);
+    console.log('NotificationBar - Unread count:', unreadCount);
+  }, [notifications, unreadCount, user]);
+
+  // Convert 24-hour time to 12-hour format with AM/PM
+  const convertTo12HourFormat = (time24) => {
+    if (!time24) return '12:00 PM';
+    
+    // Handle different time formats
+    let hours, minutes;
+    
+    if (time24.includes(':')) {
+      [hours, minutes] = time24.split(':').map(Number);
+    } else {
+      // If time is in format like "2100" or "21"
+      if (time24.length === 4) {
+        hours = parseInt(time24.substring(0, 2));
+        minutes = parseInt(time24.substring(2, 4));
+      } else if (time24.length === 3) {
+        hours = parseInt(time24.substring(0, 1));
+        minutes = parseInt(time24.substring(1, 3));
+      } else {
+        hours = parseInt(time24);
+        minutes = 0;
+      }
+    }
+    
+    if (isNaN(hours) || isNaN(minutes)) return '12:00 PM';
+    
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    
+    return `${displayHours}:${displayMinutes} ${period}`;
+  };
+
+  // Test function to create a sample notification
+  const createTestNotification = () => {
+    if (!user) return;
+    
+    const formattedTime = convertTo12HourFormat('5:45 PM');
+    
+    const testNotification = {
+      id: `test_${Date.now()}`,
+      type: 'session_reminder',
+      sender_email: 'system',
+      recipient_email: user.email,
+      session_id: 'test_session',
+      session_title: 'Test Session',
+      session_date: new Date().toISOString().split('T')[0],
+      session_time: '5:45 PM',
+      condition: '1_hour_before',
+      message: `Session starts in 1 hour: "Test Session" at ${formattedTime}`,
+      created_at: new Date().toISOString(),
+      read: false
+    };
+
+    const allNotifications = JSON.parse(localStorage.getItem("studyconnect_notifications") || "[]");
+    allNotifications.push(testNotification);
+    localStorage.setItem("studyconnect_notifications", JSON.stringify(allNotifications));
+    
+    // Trigger reload
+    window.location.reload();
+  };
+
+  // Add test function to window for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.createTestNotification = createTestNotification;
+      console.log('🔧 Debug function available: createTestNotification()');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -76,6 +157,10 @@ export default function NotificationBar({ user }) {
         return <XIcon className="w-5 h-5 text-red-500" />;
       case 'chat_message':
         return <MessageCircle className="w-5 h-5 text-purple-500" />;
+      case 'session_reminder':
+        return <Clock className="w-5 h-5 text-orange-500" />;
+      case 'session_started':
+        return <Clock className="w-5 h-5 text-red-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
     }
@@ -91,6 +176,10 @@ export default function NotificationBar({ user }) {
         return 'Request Rejected';
       case 'chat_message':
         return 'New Message';
+      case 'session_reminder':
+        return 'Session Reminder';
+      case 'session_started':
+        return 'Session Starting Now';
       default:
         return 'Notification';
     }
@@ -298,124 +387,191 @@ export default function NotificationBar({ user }) {
                   <p className="text-gray-400 text-sm mt-1">You're all caught up!</p>
                 </div>
               ) : (
-                notifications.map(notification => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 ${
-                      !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                    }`}
-                    onClick={() => !notification.read && markAsRead(notification.id)}
-                  >
-                    <div className="flex items-start gap-4">
-                      {getNotificationIcon(notification.type)}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-gray-900 text-sm">
-                            {getNotificationTitle(notification.type)}
-                          </h4>
-                          {!notification.read && (
-                            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                              NEW
-                            </span>
+                <>
+                  {/* Session Reminders Section */}
+                  {notifications.filter(n => n.type === 'session_reminder' || n.type === 'session_started').length > 0 && (
+                    <div className="bg-orange-50 border-b border-orange-200">
+                      <div className="px-4 py-3 border-b border-orange-200">
+                        <h4 className="font-semibold text-orange-800 text-sm flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Upcoming Sessions
+                        </h4>
+                      </div>
+                      {notifications.filter(n => n.type === 'session_reminder' || n.type === 'session_started').map(notification => (
+                        <div
+                          key={notification.id}
+                          className={`p-4 border-b border-orange-100 hover:bg-orange-100 transition-all duration-200 ${
+                            !notification.read ? 'bg-orange-100 border-l-4 border-l-orange-500' : ''
+                          }`}
+                          onClick={() => !notification.read && markAsRead(notification.id)}
+                        >
+                          <div className="flex items-start gap-4">
+                            <Clock className={`w-5 h-5 ${notification.type === 'session_started' ? 'text-red-500' : 'text-orange-500'} flex-shrink-0 mt-0.5`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-semibold text-orange-900 text-sm">
+                                  Session Reminder
+                                </h4>
+                                <span className="text-xs text-orange-500 font-medium">
+                                  {new Date(notification.created_at).toLocaleString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-orange-800 font-medium text-lg leading-relaxed mb-2">
+                                {notification.session_title}
+                              </p>
+                              <p className="text-orange-600 font-medium text-sm leading-relaxed mb-2">
+                                Session Starts Today at {convertTo12HourFormat(notification.session_time)}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-orange-600">
+                                <span className="font-medium">
+                                  {new Date(notification.session_date).toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short', 
+                                    day: 'numeric'
+                                  })}
+                                </span>
+                                <span className="font-medium">{convertTo12HourFormat(notification.session_time)}</span>
+                              </div>
+                            </div>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                              className="text-orange-400 hover:text-red-500 transition-colors p-1"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Other Notifications */}
+                  {notifications.filter(n => n.type !== 'session_reminder' && n.type !== 'session_started').map(notification => (
+                    <div
+                      key={notification.id}
+                      className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 ${
+                        !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                      }`}
+                      onClick={() => !notification.read && markAsRead(notification.id)}
+                    >
+                      <div className="flex items-start gap-4">
+                        {getNotificationIcon(notification.type)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-gray-900 text-sm">
+                              {getNotificationTitle(notification.type)}
+                            </h4>
+                            {!notification.read && (
+                              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-800 font-medium text-sm leading-relaxed">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2 font-medium">
+                            {new Date(notification.created_at).toLocaleString('en-US', {
+                              weekday: 'short',
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                          
+                          {/* Action buttons for join requests */}
+                          {notification.type === 'group_join_request' && (
+                            <div className="flex gap-3 mt-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinRequestResponse(
+                                    notification.id,
+                                    notification.group_id,
+                                    notification.sender_email,
+                                    'accept'
+                                  );
+                                }}
+                                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              >
+                                <Check className="w-4 h-4" />
+                                Accept Request
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinRequestResponse(
+                                    notification.id,
+                                    notification.group_id,
+                                    notification.sender_email,
+                                    'reject'
+                                  );
+                                }}
+                                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              >
+                                <XIcon className="w-4 h-4" />
+                                Reject Request
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Action buttons for connection requests */}
+                          {notification.type === 'chat_message' && 
+                           notification.message.includes('wants to connect with you') && (
+                            <div className="flex gap-3 mt-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConnectionResponse(
+                                    notification.id,
+                                    notification.sender_email,
+                                    'accepted'
+                                  );
+                                }}
+                                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              >
+                                <Check className="w-4 h-4" />
+                                Accept Connection
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConnectionResponse(
+                                    notification.id,
+                                    notification.sender_email,
+                                    'rejected'
+                                  );
+                                }}
+                                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              >
+                                <XIcon className="w-4 h-4" />
+                                Decline Connection
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <p className="text-gray-800 font-medium text-sm leading-relaxed">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2 font-medium">
-                          {new Date(notification.created_at).toLocaleString('en-US', {
-                            weekday: 'short',
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
                         
-                        {/* Action buttons for join requests */}
-                        {notification.type === 'group_join_request' && (
-                          <div className="flex gap-3 mt-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleJoinRequestResponse(
-                                  notification.id,
-                                  notification.group_id,
-                                  notification.sender_email,
-                                  'accept'
-                                );
-                              }}
-                              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                              <Check className="w-4 h-4" />
-                              Accept Request
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleJoinRequestResponse(
-                                  notification.id,
-                                  notification.group_id,
-                                  notification.sender_email,
-                                  'reject'
-                                );
-                              }}
-                              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                              <XIcon className="w-4 h-4" />
-                              Reject Request
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Action buttons for connection requests */}
-                        {notification.type === 'chat_message' && 
-                         notification.message.includes('wants to connect with you') && (
-                          <div className="flex gap-3 mt-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleConnectionResponse(
-                                  notification.id,
-                                  notification.sender_email,
-                                  'accepted'
-                                );
-                              }}
-                              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                              <Check className="w-4 h-4" />
-                              Accept Connection
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleConnectionResponse(
-                                  notification.id,
-                                  notification.sender_email,
-                                  'rejected'
-                                );
-                              }}
-                              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                              <XIcon className="w-4 h-4" />
-                              Decline Connection
-                            </button>
-                          </div>
-                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNotification(notification.id);
-                        }}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </>
               )}
             </div>
           </div>
